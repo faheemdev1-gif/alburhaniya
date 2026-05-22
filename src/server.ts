@@ -19,16 +19,13 @@ connectDB();
 
 // ── Global middleware ─────────────────────────────────────────────
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow any localhost origin in development
-    if (!origin || origin.startsWith('http://localhost')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: [
+    'https://alburhaniya-clientside.vercel.app',
+    /^http:\/\/localhost(:\d+)?$/,
+  ],
   credentials: true,
 }));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
