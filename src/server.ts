@@ -21,6 +21,8 @@ connectDB();
 app.use(cors({
   origin: [
     'https://alburhaniya-clientside.vercel.app',
+    'https://al-burhaniyainternational.co.uk',
+    'https://www.al-burhaniyainternational.co.uk',
     /^http:\/\/localhost(:\d+)?$/,
   ],
   credentials: true,
@@ -33,7 +35,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // ── API routes ────────────────────────────────────────────────────
-app.use('/api/auth',     authRoutes);     // login, me, user management
+app.use('/api/auth',     authRoutes);
 app.use('/api/events',   eventRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/gallery',  galleryRoutes);
