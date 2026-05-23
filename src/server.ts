@@ -30,6 +30,8 @@ app.use(cors({
   credentials: true,
 }));
 
+app.options('*', cors());   // ← add this line
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
