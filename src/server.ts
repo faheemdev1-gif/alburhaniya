@@ -23,6 +23,8 @@ app.use(cors({
     'https://alburhaniya-clientside.vercel.app',
     'https://al-burhaniyainternational.co.uk',
     'https://www.al-burhaniyainternational.co.uk',
+    'http://al-burhaniyainternational.co.uk',
+    'http://www.al-burhaniyainternational.co.uk',
     /^http:\/\/localhost(:\d+)?$/,
   ],
   credentials: true,
