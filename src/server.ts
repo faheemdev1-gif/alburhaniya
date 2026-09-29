@@ -8,6 +8,7 @@ import authRoutes       from './routes/auth';
 import eventRoutes      from './routes/events';
 import articleRoutes    from './routes/articles';
 import galleryRoutes    from './routes/gallery';
+import siteContentRoutes from './routes/siteContent';
 
 dotenv.config();
 
@@ -47,6 +48,7 @@ app.use('/api/auth',     authRoutes);
 app.use('/api/events',   eventRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/gallery',  galleryRoutes);
+app.use('/api/site-content', siteContentRoutes);
 
 // ── Health check ──────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {
@@ -68,7 +70,7 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 app.listen(PORT, () => {
   console.log(`\n🚀  Server running  →  http://localhost:${PORT}`);
   console.log(`    Environment     →  ${process.env.NODE_ENV}`);
-  console.log(`    MongoDB         →  ${process.env.MONGODB_URI}\n`);
+  console.log('    MongoDB         →  configured\n');
 });
 
 export default app;
