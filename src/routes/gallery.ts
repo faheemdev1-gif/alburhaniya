@@ -16,7 +16,7 @@ router.get('/', getGallery);
 
 // Admin only
 router.post('/',    protect, adminOnly, upload.single('image'), uploadGalleryImage);
-router.put('/:id',  protect, adminOnly, updateGalleryItem);
+router.put('/:id',  protect, adminOnly, upload.single('image'), updateGalleryItem);
 router.delete('/:id', protect, adminOnly, deleteGalleryItem);
 
 export default router;

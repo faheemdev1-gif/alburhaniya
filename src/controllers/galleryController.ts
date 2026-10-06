@@ -1,7 +1,7 @@
 // server/src/controllers/galleryController.ts
 import { Request, Response } from 'express';
-import path from 'path';
-import fs   from 'fs';
+import { saveMedia } from '../routes/media';
+import { sendUploadError } from '../middleware/upload';
 import GalleryItem from '../models/Gallery';
 
 // ── GET /api/gallery ─────────────────────────────────────────────
@@ -40,37 +40,53 @@ export async function uploadGalleryImage(req: Request, res: Response): Promise<v
 
     const { title, category = 'general', size = 'normal', order = 0 } = req.body;
 
-    if (!title) {
+    if (!title || typeof title !== 'string' || title.length > 160) {
       res.status(400).json({ message: 'Title is required' });
       return;
     }
 
-    const baseUrl  = `${req.protocol}://${req.get('host')}`;
-    const imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
+    if (!['gatherings','music','sports','arts','dance','general'].includes(category) || !['normal','tall','wide'].includes(size) || !Number.isFinite(Number(order))) {
+      res.status(400).json({message:'Invalid gallery category, size, or order'}); return;
+    }
+
+    const stored = await saveMedia(req.file);
 
     const item = await GalleryItem.create({
       title,
       category,
-      imageUrl,
-      filename: req.file.filename,
+      imageUrl: stored.url,
+      thumbnailUrl: stored.thumbnailUrl,
+      filename: '',
       size,
       order: Number(order),
     });
 
     res.status(201).json(item);
   } catch (err) {
-    res.status(400).json({ message: (err as Error).message });
+    sendUploadError(err, res);
   }
 }
 
 // ── PUT /api/gallery/:id ─────────────────────────────────────────
 export async function updateGalleryItem(req: Request, res: Response): Promise<void> {
   try {
+    const existing = await GalleryItem.findById(req.params.id);
+    if (!existing) { res.status(404).json({ message: 'Gallery item not found' }); return; }
     const allowedFields = ['title', 'category', 'size', 'order'];
     const update: Record<string, unknown> = {};
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) update[field] = req.body[field];
     });
+
+    // Validate metadata before storing a replacement image.
+    existing.set(update);
+    await existing.validate();
+    if (req.file) {
+      const stored=await saveMedia(req.file);
+      update.imageUrl=stored.url;
+      update.thumbnailUrl=stored.thumbnailUrl;
+      update.filename='';
+    }
 
     const item = await GalleryItem.findByIdAndUpdate(req.params.id, update, {
       new: true, runValidators: true,
@@ -78,7 +94,10 @@ export async function updateGalleryItem(req: Request, res: Response): Promise<vo
     if (!item) { res.status(404).json({ message: 'Gallery item not found' }); return; }
     res.json(item);
   } catch (err) {
-    res.status(400).json({ message: (err as Error).message });
+    if ((err as Error).name === 'ValidationError' || (err as Error).name === 'CastError') {
+      res.status(400).json({message:'Invalid gallery details'}); return;
+    }
+    sendUploadError(err, res);
   }
 }
 
@@ -88,11 +107,7 @@ export async function deleteGalleryItem(req: Request, res: Response): Promise<vo
     const item = await GalleryItem.findByIdAndDelete(req.params.id);
     if (!item) { res.status(404).json({ message: 'Gallery item not found' }); return; }
 
-    // Remove physical file from disk
-    const filePath = path.join(__dirname, '../../uploads', item.filename);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
+    // Keep the media asset because other pages may reuse its URL.
 
     res.json({ message: 'Gallery item deleted successfully' });
   } catch (err) {

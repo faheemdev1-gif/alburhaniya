@@ -4,7 +4,8 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IGalleryItem extends Document {
   title: string;
   category: string;
-  imageUrl: string;     // public URL (served from /uploads or CDN)
+  imageUrl: string;     // public URL (legacy uploads or persistent media)
+  thumbnailUrl?: string;
   filename: string;     // stored filename on disk
   size: 'normal' | 'tall' | 'wide';
   order: number;
@@ -21,7 +22,8 @@ const GallerySchema = new Schema<IGalleryItem>(
       default: 'general',
     },
     imageUrl: { type: String, required: true },
-    filename: { type: String, required: true },
+    thumbnailUrl: { type: String },
+    filename: { type: String, default: '' },
     size:     { type: String, enum: ['normal', 'tall', 'wide'], default: 'normal' },
     order:    { type: Number, default: 0 },
   },

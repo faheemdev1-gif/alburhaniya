@@ -1,11 +1,10 @@
 import { Router, Request, Response } from 'express';
-import * as fs from 'fs';
 import SiteContent from '../models/SiteContent';
-import SiteMedia from '../models/SiteMedia';
-import mongoose from 'mongoose';
 import { protect, adminOnly } from '../middleware/auth';
 import { upload } from '../middleware/upload';
+import { uploadMedia, serveMedia } from './media';
 
+//fageen
 const router = Router();
 const sections = new Set(['hero','stats','about','activities','events','articles','gallery','join','donate','testimonials','contact','newsletter','innerPages','navigation','branding']);
 function valid(value: unknown, depth = 0): boolean {
@@ -30,29 +29,7 @@ router.put('/', protect, adminOnly, async (req: Request, res: Response) => {
     res.json(body);
   } catch { res.status(503).json({message:'Could not save website content'}); }
 });
-router.get('/media/:id', async (req: Request, res: Response) => {
-  if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).end();
-  try {
-    const media = await SiteMedia.findById(req.params.id);
-    if (!media) return res.status(404).end();
-    res.set('Content-Type', media.mime);
-    res.set('Cache-Control','public, max-age=31536000, immutable');
-    return res.send(media.data);
-  } catch { return res.status(503).end(); }
-});
-router.post('/image', protect, adminOnly, upload.single('image'), async (req: Request, res: Response) => {
-  if (!req.file) return res.status(400).json({message:'Choose a JPG, PNG, GIF, or WebP image under the upload limit.'});
-  try {
-    const bytes = fs.readFileSync(req.file.path);
-    const jpg = bytes[0]===0xff && bytes[1]===0xd8 && bytes[2]===0xff;
-    const png = bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]));
-    const gif = bytes.toString('ascii',0,6)==='GIF87a' || bytes.toString('ascii',0,6)==='GIF89a';
-    const webp = bytes.toString('ascii',0,4)==='RIFF' && bytes.toString('ascii',8,12)==='WEBP';
-    const mime = jpg?'image/jpeg':png?'image/png':gif?'image/gif':webp?'image/webp':'';
-    if (!mime) return res.status(400).json({message:'Invalid image file'});
-    const media = await SiteMedia.create({mime,data:bytes});
-    return res.json({url:`/api/site-content/media/${media.id}`});
-  } catch { return res.status(503).json({message:'Could not store image'}); }
-  finally { fs.unlink(req.file.path,()=>{}); }
-});
+// Preserve URLs issued by the first content-editor release.
+router.get('/media/:id', serveMedia);
+router.post('/image', protect, adminOnly, upload.single('image'), uploadMedia);
 export default router;
