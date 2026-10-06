@@ -30,6 +30,33 @@ in your existing project connected to Vercel. Set VITE_API_URL to
 https://peru-nightingale-490437.hostingersite.com/api in Vercel's Production
 environment, commit/push the updated source and wait for the new deployment.
 
+## Update the existing backend Git repository on a Mac
+
+Hostinger uses https://github.com/faheemdev1-gif/alburhaniya.git, branch main,
+with the backend package.json at the repository root. Clone this backend into
+its own folder beside the frontend, then open that folder in VS Code.
+The frontend's old server gitlink has no submodule mapping; cloning the backend
+separately preserves its existing Git history and remote.
+
+Download the latest backend ZIP and save it in Downloads as
+al-burhaniya-backend.zip. From the cloned backend's root, extract all files,
+including hidden files, without copying through Finder:
+
+    unzip -o "$HOME/Downloads/al-burhaniya-backend.zip" -d .
+    npm ci
+    npm test
+
+The ZIP has no .git or private .env, so extraction preserves those local files.
+Then stage the supplied source, scripts, tests, manifests, .node-version,
+.gitignore, .env.example and README files; commit and push origin main.
+Wait for Hostinger's automatic deployment and confirm contact-v1 in health.
+
+Runtime dependencies have been refreshed within their compatible version
+ranges. The unsupported ts-node-dev watcher was replaced with tsx; dev now uses
+tsx watch, and seed/migrate:images use tsx too. Audit and tests are rerun when
+packaging; npm audit reports advisory status at the time it is run, not a
+guarantee that new advisories will never appear.
+
 Health: https://peru-nightingale-490437.hostingersite.com/api/health
 should include contact.contract = contact-v1. emailConfigured indicates only
 whether configuration values exist; it is not an SMTP connectivity test.

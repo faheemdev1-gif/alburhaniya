@@ -12,6 +12,10 @@ import galleryRoutes    from './routes/gallery';
 import siteContentRoutes from './routes/siteContent';
 import mediaRoutes from './routes/media';
 import contactRoutes from './routes/contact';
+import newsletterRoutes from './routes/newsletter';
+import donationRoutes from './routes/donations';
+import { donationConfigured, DONATION_CONTRACT } from './services/stripeCheckout';
+import { newsletterEmailConfigured } from './services/newsletterNotification';
 import { contactEmailConfigured } from './services/contactNotification';
 
 
@@ -37,6 +41,8 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
 
+app.use('/api/donations', express.json({ limit: '2kb' }), donationRoutes);
+app.use('/api/newsletter', express.json({ limit: '4kb' }), newsletterRoutes);
 app.use('/api/contact', express.json({ limit: '16kb' }), contactRoutes);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -57,6 +63,8 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(),
     uploadContract:'image-upload-v3',mediaStorage:mediaStorageStatus(),
     contact:{contract:'contact-v1',emailConfigured:contactEmailConfigured()},
+    newsletter:{contract:'newsletter-v1',emailConfigured:newsletterEmailConfigured()},
+    donations:{contract:DONATION_CONTRACT,configured:donationConfigured()},
     uploads:{endpoints:['/api/media','/api/site-content/image','/api/gallery'],
       maxFileSizeMB:maxUploadSizeMB(),maxInputPixels:40_000_000,formats:['jpeg','png','webp','gif']} });
 });
