@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 import Subscriber, { NEWSLETTER_STATUSES } from '../models/NewsletterSubscriber';
 import { protect, adminOnly } from '../middleware/auth';
 import { validEmail } from '../services/contactNotification';
-import { newsletterEmailConfigured, sendNewsletterConfirmation, tokenHash, unsubscribeId, unsubscribeUrl } from '../services/newsletterNotification';
+import { notifyNewsletterAdmin, newsletterEmailConfigured, sendNewsletterConfirmation, tokenHash, unsubscribeId, unsubscribeUrl } from '../services/newsletterNotification';
 
 const router = express.Router();
 router.use((_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
@@ -48,8 +48,8 @@ router.post('/subscribe', async (req, res) => {
     if (record.status === 'confirmed') { receipt(res, 'inactive'); return; }
     if (record.status === 'unsubscribed') {
       record = await Subscriber.findOneAndUpdate({ _id: record.id, status: 'unsubscribed' }, {
-        $set: { status: 'pending', requestedAt: new Date(), notificationStatus: 'pending', consentVersion: 'homepage-newsletter-v1' },
-        $unset: { confirmationHash: 1, confirmationExpiresAt: 1, confirmedAt: 1, notificationAttemptedAt: 1 },
+        $set: { status: 'pending', requestedAt: new Date(), notificationStatus: 'pending', adminNotificationStatus: 'pending', consentVersion: 'homepage-newsletter-v1' },
+        $unset: { confirmationHash: 1, confirmationExpiresAt: 1, confirmedAt: 1, notificationAttemptedAt: 1, adminNotificationAttemptedAt: 1 },
       }, { new: true });
       if (!record) { receipt(res, 'inactive'); return; }
     }
@@ -68,6 +68,7 @@ router.post('/confirm', async (req, res) => {
     if (!record && !await Subscriber.exists({ confirmationHash: hash, status: 'confirmed' })) {
       res.status(400).json({ message: 'This confirmation link is invalid or expired. Subscribe again to request a new link.' }); return;
     }
+    if (record) { try { await notifyNewsletterAdmin(record.id); } catch { console.error('[Newsletter] Notification status update failed; subscription remains confirmed.'); } }
     res.json({ message: 'Your newsletter subscription is confirmed. Thank you for joining us.' });
   } catch { res.status(503).json({ message: 'We could not confirm your subscription. Please try again.' }); }
 });
@@ -82,6 +83,15 @@ router.post('/unsubscribe', async (req, res) => {
 });
 
 router.use(protect, adminOnly);
+router.post('/:id/notify', async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) { res.status(400).json({ message: 'Invalid subscriber.' }); return; }
+  try {
+    const record = await Subscriber.findById(req.params.id);
+    if (!record || record.status !== 'confirmed') { res.status(404).json({ message: 'Confirmed subscriber not found.' }); return; }
+    await notifyNewsletterAdmin(record.id);
+    res.json({ message: 'Admin notification retry processed. Refresh to check status.' });
+  } catch { res.status(503).json({ message: 'Notification retry failed; subscriber remains saved.' }); }
+});
 // Export only confirmed consent. Escape formula prefixes as well as normal CSV quoting.
 const csvCell = (value: string) => `"${(/^[=+@\-\t\r\n]/.test(value) ? "'" + value : value).replace(/"/g, '""')}"`;
 router.get('/export', async (_req, res) => {

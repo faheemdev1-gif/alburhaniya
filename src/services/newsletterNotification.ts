@@ -70,3 +70,23 @@ export async function sendNewsletterConfirmation(id: string): Promise<'sent' | '
   await Subscriber.updateOne({ _id: id, status: 'pending', confirmationHash: hash }, { $set: { notificationStatus: sent ? 'sent' : 'failed' } });
   return sent ? 'sent' : 'failed';
 }
+
+
+export async function notifyNewsletterAdmin(id: string): Promise<void> {
+  const { notificationMailbox, siteEmailConfigured, sendSiteEmail } = await import('./siteEmail');
+  if (!siteEmailConfigured()) {
+    await Subscriber.updateOne({ _id: id, status: 'confirmed', adminNotificationStatus: { $ne: 'sent' } }, { $set: { adminNotificationStatus: 'disabled' } });
+    return;
+  }
+  const record = await Subscriber.findOneAndUpdate({ _id: id, status: 'confirmed', $or: [
+    { adminNotificationStatus: { $exists: false } },
+    { adminNotificationStatus: { $in: ['pending', 'failed', 'disabled'] } },
+    { adminNotificationStatus: 'sending', adminNotificationAttemptedAt: { $lt: new Date(Date.now() - 5 * 60_000) } },
+  ] }, { $set: { adminNotificationStatus: 'sending', adminNotificationAttemptedAt: new Date() } }, { new: true });
+  if (!record) return;
+  let sent = false;
+  try {
+    sent = await sendSiteEmail(notificationMailbox(), 'New confirmed newsletter subscriber', `A new subscriber has confirmed their email.\n\nEmail: ${record.email}\nConfirmed: ${record.confirmedAt?.toISOString()}\n\nManage subscribers in Admin > Subscribers.`);
+  } catch { console.error('[Newsletter] Admin notification failed; confirmed subscription remains saved.'); }
+  await Subscriber.updateOne({ _id: id }, { $set: { adminNotificationStatus: sent ? 'sent' : 'failed' } });
+}

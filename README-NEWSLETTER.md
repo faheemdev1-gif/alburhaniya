@@ -1,6 +1,8 @@
 # Newsletter sign-up: deployment and use
 
-The homepage “Stay in the Loop” form now saves newsletter requests to MongoDB instead of showing a pretend success message. SMTP sends an email confirmation link. The address joins the confirmed mailing list only after its owner opens the link and presses **Confirm subscription**.
+The subscription forms on the homepage, events listing, event detail, articles and gallery pages now saves newsletter requests to MongoDB instead of showing a pretend success message. SMTP sends an email confirmation link. The address joins the confirmed mailing list only after its owner opens the link and presses **Confirm subscription**.
+
+After a visitor confirms, the main mailbox receives an owner notification. It defaults to `info@al-burhaniyainternational.co.uk`, or `NOTIFICATION_TO_EMAIL` / `CONTACT_TO_EMAIL` on the backend. Admin notifications have a separate status and retry button.
 
 Admin **Subscribers** lets administrators search and filter requests, resend confirmation emails, unsubscribe an address, and export confirmed subscribers as CSV. Pending and unsubscribed addresses are excluded from the export. The email includes a cancellation/unsubscribe link.
 
@@ -92,7 +94,7 @@ Deploy the new frontend commit. This variable must exist BEFORE the frontend bui
 
 ## 4. Verify the public website
 
-1. Open `https://peru-nightingale-490437.hostingersite.com/api/health`. The response should include `newsletter.contract: "newsletter-v1"` and `newsletter.emailConfigured: true`.
+1. Open `https://peru-nightingale-490437.hostingersite.com/api/health`. The response should include `newsletter.contract: "newsletter-v2"` and `newsletter.emailConfigured: true`.
 2. Open `https://al-burhaniyainternational.co.uk/`, submit your own email in Stay in the Loop, and check the inbox/spam folder.
 3. Open `https://al-burhaniyainternational.co.uk/admin/subscribers` as an administrator. The request should be pending initially.
 4. Open the confirmation email link and select **Confirm subscription**. Refresh Subscribers; the address should now be confirmed.

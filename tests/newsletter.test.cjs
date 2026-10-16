@@ -60,6 +60,15 @@ test('GET does not confirm; POST confirms once, then remains idempotent', async 
   assert.equal((await request('/confirm','POST',{token})).status,200);
   const count = f.mail.length; await subscribe(row.email); assert.equal(row.status,'confirmed'); assert.equal(f.mail.length,count);
 });
+test('confirming notifies the main mailbox once and never sends owner alerts for unconfirmed requests', async () => {
+  const owner = f.mail.filter(m => m.subject === 'New confirmed newsletter subscriber');
+  assert.equal(owner.length, 1); assert.equal(owner[0].to, 'info@al-burhaniyainternational.co.uk');
+  assert.match(owner[0].text, /confirm@example.test/);
+  const row = [...f.rows.values()].find(r => r.email === 'confirm@example.test');
+  assert.equal(row.adminNotificationStatus, 'sent');
+  await service.notifyNewsletterAdmin(row.id);
+  assert.equal(f.mail.filter(m => m.subject === 'New confirmed newsletter subscriber').length, 1);
+});
 test('invalid and expired confirmation links cannot add subscribers to the list', async () => {
   await subscribe('expired@example.test'); const row = latest(), token = mailToken(f.mail.at(-1)); row.confirmationExpiresAt = new Date(0);
   for (const value of [token,'0'.repeat(64),'bad',{$gt:''}]) assert.equal((await request('/confirm','POST',{token:value})).status,400);
@@ -117,6 +126,6 @@ test('sign-ups are rate limited per email with a Retry-After header', async () =
   const res=await subscribe('rate@example.test');assert.equal(res.status,429);assert.equal(res.headers.get('Retry-After'),'900');
 });
 test('health reports newsletter readiness without exposing credentials', async () => {
-  const data=await(await fetch(base+'/api/health')).json();assert.equal(data.newsletter.contract,'newsletter-v1');assert.equal(data.newsletter.emailConfigured,false);assert(!JSON.stringify(data).includes('password'));
+  const data=await(await fetch(base+'/api/health')).json();assert.equal(data.newsletter.contract,'newsletter-v2');assert.equal(data.newsletter.emailConfigured,false);assert(!JSON.stringify(data).includes('password'));
   smtp();process.env.NEWSLETTER_SITE_URL='https://attacker:secret@example.test';assert.equal(service.newsletterEmailConfigured(),false);delete process.env.NEWSLETTER_SITE_URL;
 });

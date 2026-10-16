@@ -12,6 +12,8 @@ const schema = new Schema({
   confirmationExpiresAt: { type: Date, select: false },
   notificationStatus: { type: String, enum: ['pending', 'sending', 'sent', 'failed', 'disabled'], default: 'pending' },
   notificationAttemptedAt: Date,
+  adminNotificationStatus: { type: String, enum: ['pending', 'sending', 'sent', 'failed', 'disabled'], default: 'pending' },
+  adminNotificationAttemptedAt: Date,
 }, { timestamps: true });
 schema.index({ createdAt: -1 });
 schema.index({ confirmationHash: 1 }, { sparse: true });

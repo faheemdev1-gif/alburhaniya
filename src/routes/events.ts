@@ -2,6 +2,11 @@
 import { Router, Request, Response } from 'express';
 import slugify from 'slugify';
 import Event from '../models/Event';
+import { registerForEvent } from '../services/eventRegistration';
+import { notifyEventRegistration } from '../services/eventNotification';
+import { eventMailbox, siteEmailConfigured } from '../services/siteEmail';
+import mongoose from 'mongoose';
+import { londonToday } from '../services/eventDate';
 import { protect, adminOnly } from '../middleware/auth';
 
 const router = Router();
@@ -12,8 +17,10 @@ router.get('/', async (req: Request, res: Response) => {
   try {
     const { status, category, search, featured, limit = 20, page = 1 } = req.query;
 
+    if (!Number.isSafeInteger(Number(page)) || Number(page) < 1 || !Number.isSafeInteger(Number(limit)) || Number(limit) < 1 || Number(limit) > 100 || (status && !['past', 'upcoming'].includes(String(status))) || (search && (typeof search !== 'string' || search.length > 200))) { res.status(400).json({ message: 'Invalid event filters.' }); return; }
+
     // Auto-update statuses based on today's date
-    const today = new Date().toISOString().split('T')[0];
+    const today = londonToday();
     await Event.updateMany({ dateISO: { $lt: today }, status: 'upcoming' }, { status: 'past' });
     await Event.updateMany({ dateISO: { $gte: today }, status: 'past'     }, { status: 'upcoming' });
 
@@ -22,7 +29,7 @@ router.get('/', async (req: Request, res: Response) => {
     if (category && category !== 'all') filter.categoryKey = category;
     if (featured) filter.featured    = featured === 'true';
     if (search) {
-      const q = new RegExp(search as string, 'i');
+      const q = new RegExp((search as string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
       filter.$or = [{ title: q }, { category: q }, { location: q }, { tags: q }];
     }
 
@@ -42,7 +49,7 @@ router.get('/', async (req: Request, res: Response) => {
 // ── GET /api/events/featured ─────────────────────────────────────
 router.get('/featured', async (_req: Request, res: Response) => {
   try {
-    const event = await Event.findOne({ featured: true, status: 'upcoming' });
+    const event = await Event.findOne({ featured: true, dateISO: { $gte: londonToday() } }).sort({ dateISO: 1 });
     res.json(event);
   } catch (err) {
     res.status(500).json({ message: (err as Error).message });
@@ -59,7 +66,7 @@ router.get('/:id', async (req: Request, res: Response) => {
       : await Event.findOne({ slug: id });
 
     if (!event) { res.status(404).json({ message: 'Event not found' }); return; }
-    res.json(event);
+    res.json({ ...event.toObject(), status: event.dateISO < londonToday() ? 'past' : 'upcoming' });
   } catch (err) {
     res.status(500).json({ message: (err as Error).message });
   }
@@ -73,7 +80,7 @@ router.get('/:id/related', async (req: Request, res: Response) => {
 
     const related = await Event.find({
       _id: { $ne: event._id },
-      status: 'upcoming',
+      dateISO: { $gte: londonToday() },
       categoryKey: event.categoryKey,
     }).limit(3);
 
@@ -81,7 +88,7 @@ router.get('/:id/related', async (req: Request, res: Response) => {
     if (related.length < 3) {
       const more = await Event.find({
         _id: { $nin: [event._id, ...related.map(r => r._id)] },
-        status: 'upcoming',
+        dateISO: { $gte: londonToday() },
       }).limit(3 - related.length);
       related.push(...more);
     }
@@ -95,7 +102,9 @@ router.get('/:id/related', async (req: Request, res: Response) => {
 // ── POST /api/events  (admin) ────────────────────────────────────
 router.post('/', protect, adminOnly, async (req: Request, res: Response) => {
   try {
-    const body = req.body;
+    const body = { ...req.body };
+    delete body.registrations; delete body.registered;
+    if (Object.keys(body).some(key => key.startsWith('$') || key.includes('.'))) { res.status(400).json({ message: 'Invalid event fields.' }); return; }
     const slug = slugify(body.title, { lower: true, strict: true });
 
     // Derive day / month / year from dateISO
@@ -115,7 +124,9 @@ router.post('/', protect, adminOnly, async (req: Request, res: Response) => {
 // ── PUT /api/events/:id  (admin) ─────────────────────────────────
 router.put('/:id', protect, adminOnly, async (req: Request, res: Response) => {
   try {
-    const body = req.body;
+    const body = { ...req.body };
+    delete body.registrations; delete body.registered;
+    if (Object.keys(body).some(key => key.startsWith('$') || key.includes('.'))) { res.status(400).json({ message: 'Invalid event fields.' }); return; }
 
     if (body.dateISO) {
       const d = new Date(body.dateISO);
@@ -139,20 +150,38 @@ router.put('/:id', protect, adminOnly, async (req: Request, res: Response) => {
 });
 
 // ── PATCH /api/events/:id/register  (public) ────────────────────
-// Increments registered count by 1
-router.patch('/:id/register', async (req: Request, res: Response) => {
-  try {
-    const event = await Event.findById(req.params.id);
-    if (!event) { res.status(404).json({ message: 'Event not found' }); return; }
-    if (event.registered >= event.capacity) {
-      res.status(400).json({ message: 'Event is fully booked' }); return;
-    }
-    event.registered += 1;
-    await event.save();
-    res.json({ registered: event.registered, spotsLeft: event.capacity - event.registered });
-  } catch (err) {
-    res.status(500).json({ message: (err as Error).message });
+// Saves attendee details and reserves the requested places atomically
+router.patch('/:id/register', registerForEvent);
+router.post('/:id/register', registerForEvent);
+
+router.get('/:id/registrations', protect, adminOnly, async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const page = Number(req.query.page || 1);
+  if (!mongoose.isValidObjectId(req.params.id) || !Number.isSafeInteger(page) || page < 1 || page > 100000) {
+    res.status(400).json({ message: 'Invalid event or page.' }); return;
   }
+  try {
+    const event = await Event.findById(req.params.id).select('+registrations');
+    if (!event) { res.status(404).json({ message: 'Event not found.' }); return; }
+    const rows = [...event.registrations].reverse();
+    res.json({ event: { _id: event._id, title: event.title, registered: event.registered, capacity: event.capacity },
+      registrations: rows.slice((page - 1) * 25, page * 25).map(row => {
+        const { submissionId, ...safe } = (row as any).toObject(); return safe;
+      }), total: rows.length, page, emailConfigured: siteEmailConfigured(eventMailbox()) });
+  } catch { res.status(503).json({ message: 'Registrations could not be loaded.' }); }
+});
+router.post('/:id/registrations/:registrationId/notify', protect, adminOnly, async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!mongoose.isValidObjectId(req.params.id) || !mongoose.isValidObjectId(req.params.registrationId)) {
+    res.status(400).json({ message: 'Invalid registration.' }); return;
+  }
+  if (!siteEmailConfigured(eventMailbox())) { res.status(503).json({ message: 'Configure backend SMTP before retrying emails.' }); return; }
+  try {
+    const found = await Event.exists({ _id: req.params.id, 'registrations._id': req.params.registrationId });
+    if (!found) { res.status(404).json({ message: 'Registration not found.' }); return; }
+    await notifyEventRegistration(req.params.id, req.params.registrationId);
+    res.json({ message: 'Email retry processed. Refresh to check delivery status.' });
+  } catch { res.status(503).json({ message: 'Email retry could not be processed. Registration remains saved.' }); }
 });
 
 // ── DELETE /api/events/:id  (admin) ─────────────────────────────

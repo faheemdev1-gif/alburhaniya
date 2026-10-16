@@ -136,20 +136,7 @@ export async function updateEvent(req: Request, res: Response): Promise<void> {
 }
 
 // ── PATCH /api/events/:id/register ──────────────────────────────
-export async function registerForEvent(req: Request, res: Response): Promise<void> {
-  try {
-    const event = await Event.findById(req.params.id);
-    if (!event) { res.status(404).json({ message: 'Event not found' }); return; }
-    if (event.registered >= event.capacity) {
-      res.status(400).json({ message: 'Event is fully booked' }); return;
-    }
-    event.registered += 1;
-    await event.save();
-    res.json({ registered: event.registered, spotsLeft: event.capacity - event.registered });
-  } catch (err) {
-    res.status(500).json({ message: (err as Error).message });
-  }
-}
+export { registerForEvent } from '../services/eventRegistration';
 
 // ── DELETE /api/events/:id ───────────────────────────────────────
 export async function deleteEvent(req: Request, res: Response): Promise<void> {

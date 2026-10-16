@@ -1,12 +1,20 @@
 // server/src/models/Event.ts
 import mongoose, { Document, Schema } from 'mongoose';
+import { londonToday } from '../services/eventDate';
 
 export interface IScheduleItem {
   time: string;
   item: string;
 }
 
+export interface IRegistration {
+  _id: mongoose.Types.ObjectId;
+  submissionId: string; firstName: string; lastName: string; email: string;
+  phone: string; notes: string; places: number; createdAt: Date;
+  organiserNotificationStatus: string; confirmationNotificationStatus: string;
+}
 export interface IEvent extends Document {
+  registrations: IRegistration[];
   title: string;
   slug: string;
   category: string;
@@ -42,8 +50,19 @@ const ScheduleItemSchema = new Schema<IScheduleItem>(
   { _id: false }
 );
 
+const notificationState = { type: String, enum: ['pending', 'sending', 'sent', 'failed', 'disabled'], default: 'pending' };
+const RegistrationSchema = new Schema({
+  submissionId: { type: String, required: true }, firstName: { type: String, required: true, maxlength: 80 },
+  lastName: { type: String, required: true, maxlength: 80 }, email: { type: String, required: true, maxlength: 254 },
+  phone: { type: String, default: '', maxlength: 40 }, notes: { type: String, default: '', maxlength: 2000 },
+  places: { type: Number, required: true, min: 1, max: 4 }, createdAt: { type: Date, default: Date.now },
+  organiserNotificationStatus: notificationState, confirmationNotificationStatus: notificationState,
+  organiserNotificationAttemptedAt: Date, confirmationNotificationAttemptedAt: Date,
+});
+
 const EventSchema = new Schema<IEvent>(
   {
+    registrations: { type: [RegistrationSchema], default: [], select: false },
     title:       { type: String, required: true, trim: true },
     slug:        { type: String, required: true, unique: true, lowercase: true },
     category:    { type: String, required: true },
@@ -79,7 +98,7 @@ const EventSchema = new Schema<IEvent>(
 
 // Auto-update status based on date before saving
 EventSchema.pre('save', function (next) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = londonToday();
   if (this.dateISO < today) this.status = 'past';
   else this.status = 'upcoming';
   next();
