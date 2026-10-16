@@ -91,9 +91,9 @@ test('parallel reservation requests cannot both take the final places; closed an
 });
 test('storage failure cannot return success or disclose internal database errors',async()=>{failStore=true;const res=await register(payload());failStore=false;assert.equal(res.status,503);assert(!JSON.stringify(await res.json()).includes('private'));});
 test('SMTP sends organiser details to the fixed main mailbox and attendee confirmation to the visitor',async()=>{
- Object.assign(process.env,{SMTP_HOST:'smtp.example.test',SMTP_PORT:'465',SMTP_USER:'info@al-burhaniyainternational.co.uk',SMTP_PASS:'test-password',CONTACT_FROM_EMAIL:'info@al-burhaniyainternational.co.uk'});
+ Object.assign(process.env,{SMTP_HOST:'smtp.example.test',SMTP_PORT:'465',SMTP_USER:'info@alburhaniyainternational.org.uk',SMTP_PASS:'test-password',CONTACT_FROM_EMAIL:'info@alburhaniyainternational.org.uk'});
  const data=payload({places:1});const res=await register(data);assert.equal(res.status,201);const id=(await res.json()).reference;
- const organiser=mail.find(m=>m.text.includes(id)&&m.to==='info@al-burhaniyainternational.co.uk');assert(organiser);assert.equal(organiser.replyTo,data.email);assert.match(organiser.text,/Places: 1/);
+ const organiser=mail.find(m=>m.text.includes(id)&&m.to==='info@alburhaniyainternational.org.uk');assert(organiser);assert.equal(organiser.replyTo,data.email);assert.match(organiser.text,/Places: 1/);
  const visitor=mail.find(m=>m.text.includes(id)&&m.to===data.email);assert(visitor);assert.match(visitor.text,/reserved/);const count=mail.length;await register(data);assert.equal(mail.length,count);
 });
 test('SMTP failure keeps the registration and allows admin retries without reserving again',async()=>{

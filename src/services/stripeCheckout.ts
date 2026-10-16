@@ -3,7 +3,7 @@ export const MAX_DONATION_PENCE = 1_000_000;
 export const DONATION_CONTRACT = 'donation-checkout-v1';
 const stripeVersion = '2025-06-30.basil';
 export function donationSiteUrl(): string {
-  const url = new URL(process.env.DONATION_SITE_URL || 'https://al-burhaniyainternational.co.uk');
+  const url = new URL(process.env.DONATION_SITE_URL || 'https://www.alburhaniyainternational.org.uk');
   if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password || url.pathname !== '/' || url.search || url.hash ||
       (url.protocol === 'http:' && !['localhost', '127.0.0.1'].includes(url.hostname))) throw new Error('Invalid donation site URL');
   return url.origin;

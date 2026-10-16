@@ -29,7 +29,7 @@ Use the SAME organisation's Stripe account that owns your current donation butto
 
 ```dotenv
 STRIPE_SECRET_KEY=YOUR_STRIPE_SERVER_KEY
-DONATION_SITE_URL=https://al-burhaniyainternational.co.uk
+DONATION_SITE_URL=https://www.alburhaniyainternational.org.uk
 ```
 
 4. Keep your existing MongoDB, JWT, image storage and SMTP variables.

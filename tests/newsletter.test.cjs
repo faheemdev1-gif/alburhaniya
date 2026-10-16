@@ -62,7 +62,7 @@ test('GET does not confirm; POST confirms once, then remains idempotent', async 
 });
 test('confirming notifies the main mailbox once and never sends owner alerts for unconfirmed requests', async () => {
   const owner = f.mail.filter(m => m.subject === 'New confirmed newsletter subscriber');
-  assert.equal(owner.length, 1); assert.equal(owner[0].to, 'info@al-burhaniyainternational.co.uk');
+  assert.equal(owner.length, 1); assert.equal(owner[0].to, 'info@alburhaniyainternational.org.uk');
   assert.match(owner[0].text, /confirm@example.test/);
   const row = [...f.rows.values()].find(r => r.email === 'confirm@example.test');
   assert.equal(row.adminNotificationStatus, 'sent');

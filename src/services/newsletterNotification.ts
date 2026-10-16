@@ -5,7 +5,7 @@ import { validEmail } from './contactNotification';
 
 export const tokenHash = (token: string) => createHash('sha256').update(token).digest('hex');
 export function newsletterSiteUrl(): string {
-  const url = new URL(process.env.NEWSLETTER_SITE_URL || 'https://al-burhaniyainternational.co.uk');
+  const url = new URL(process.env.NEWSLETTER_SITE_URL || 'https://www.alburhaniyainternational.org.uk');
   if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password || url.search || url.hash || url.pathname !== '/') throw new Error('Invalid newsletter website URL');
   if (url.protocol === 'http:' && !['localhost', '127.0.0.1'].includes(url.hostname)) throw new Error('Newsletter website must use HTTPS');
   return url.origin;

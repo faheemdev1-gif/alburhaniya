@@ -2,7 +2,7 @@
 
 The subscription forms on the homepage, events listing, event detail, articles and gallery pages now saves newsletter requests to MongoDB instead of showing a pretend success message. SMTP sends an email confirmation link. The address joins the confirmed mailing list only after its owner opens the link and presses **Confirm subscription**.
 
-After a visitor confirms, the main mailbox receives an owner notification. It defaults to `info@al-burhaniyainternational.co.uk`, or `NOTIFICATION_TO_EMAIL` / `CONTACT_TO_EMAIL` on the backend. Admin notifications have a separate status and retry button.
+After a visitor confirms, the main mailbox receives an owner notification. It defaults to `info@alburhaniyainternational.org.uk`, or `NOTIFICATION_TO_EMAIL` / `CONTACT_TO_EMAIL` on the backend. Admin notifications have a separate status and retry button.
 
 Admin **Subscribers** lets administrators search and filter requests, resend confirmation emails, unsubscribe an address, and export confirmed subscribers as CSV. Pending and unsubscribed addresses are excluded from the export. The email includes a cancellation/unsubscribe link.
 
@@ -47,17 +47,17 @@ Use the SMTP account you already use for the contact form. No new image storage 
 SMTP_HOST=smtp.hostinger.com
 SMTP_PORT=465
 SMTP_SECURE=true
-SMTP_USER=info@al-burhaniyainternational.co.uk
+SMTP_USER=info@alburhaniyainternational.org.uk
 SMTP_PASS=YOUR_ACTUAL_MAILBOX_PASSWORD
-CONTACT_FROM_EMAIL=info@al-burhaniyainternational.co.uk
-CONTACT_TO_EMAIL=info@al-burhaniyainternational.co.uk
-NEWSLETTER_FROM_EMAIL=info@al-burhaniyainternational.co.uk
-NEWSLETTER_SITE_URL=https://al-burhaniyainternational.co.uk
+CONTACT_FROM_EMAIL=info@alburhaniyainternational.org.uk
+CONTACT_TO_EMAIL=info@alburhaniyainternational.org.uk
+NEWSLETTER_FROM_EMAIL=info@alburhaniyainternational.org.uk
+NEWSLETTER_SITE_URL=https://www.alburhaniyainternational.org.uk
 ```
 
 Use the real mailbox's SMTP settings if it is hosted elsewhere; the example above assumes a Hostinger mailbox. `SMTP_PASS` is the mailbox's password. Your existing `JWT_SECRET` must remain set. Do not send passwords in chat, commit them to Git, or use `VITE_*` variables for SMTP secrets.
 
-The newsletter sender falls back to `CONTACT_FROM_EMAIL`, then `SMTP_USER`, if `NEWSLETTER_FROM_EMAIL` is omitted. The website URL defaults to `https://al-burhaniyainternational.co.uk`; use an HTTPS origin without a path or credentials if you override it.
+The newsletter sender falls back to `CONTACT_FROM_EMAIL`, then `SMTP_USER`, if `NEWSLETTER_FROM_EMAIL` is omitted. The website URL defaults to `https://www.alburhaniyainternational.org.uk`; use an HTTPS origin without a path or credentials if you override it.
 
 Without SMTP, a valid request is saved as **pending** and the form explicitly says confirmation is unavailable. It does not say the visitor is subscribed. After configuring SMTP, open Admin > Subscribers and resend the pending confirmation. SMTP acceptance does not guarantee inbox delivery; check spam and your mailbox provider's sender configuration if necessary.
 
@@ -95,8 +95,8 @@ Deploy the new frontend commit. This variable must exist BEFORE the frontend bui
 ## 4. Verify the public website
 
 1. Open `https://peru-nightingale-490437.hostingersite.com/api/health`. The response should include `newsletter.contract: "newsletter-v2"` and `newsletter.emailConfigured: true`.
-2. Open `https://al-burhaniyainternational.co.uk/`, submit your own email in Stay in the Loop, and check the inbox/spam folder.
-3. Open `https://al-burhaniyainternational.co.uk/admin/subscribers` as an administrator. The request should be pending initially.
+2. Open `https://www.alburhaniyainternational.org.uk/`, submit your own email in Stay in the Loop, and check the inbox/spam folder.
+3. Open `https://www.alburhaniyainternational.org.uk/admin/subscribers` as an administrator. The request should be pending initially.
 4. Open the confirmation email link and select **Confirm subscription**. Refresh Subscribers; the address should now be confirmed.
 5. Select **Export confirmed CSV**. Your confirmed address should be included.
 6. Open the email's unsubscribe link and select **Unsubscribe**. Refresh Subscribers and export again; your address should be excluded.

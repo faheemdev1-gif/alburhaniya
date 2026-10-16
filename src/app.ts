@@ -27,10 +27,8 @@ const app  = express();
 const corsOptions = {
   origin: [
     'https://alburhaniya-clientside.vercel.app',
-    'https://al-burhaniyainternational.co.uk',
-    'https://www.al-burhaniyainternational.co.uk',
-    'http://al-burhaniyainternational.co.uk',
-    'http://www.al-burhaniyainternational.co.uk',
+    'https://www.alburhaniyainternational.org.uk',
+    'https://alburhaniyainternational.org.uk',
     /^http:\/\/localhost(:\d+)?$/,
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],

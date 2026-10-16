@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import SiteContent from '../models/SiteContent';
+import { migrateSiteIdentity } from '../services/siteIdentity';
 import { protect, adminOnly } from '../middleware/auth';
 import { upload } from '../middleware/upload';
 import { uploadMedia, serveMedia } from './media';
@@ -16,7 +17,7 @@ function valid(value: unknown, depth = 0): boolean {
   return false;
 }
 router.get('/', async (_req: Request, res: Response) => {
-  try { res.json((await SiteContent.findOne({key:'website'}).lean())?.content || {}); }
+  try { res.json(migrateSiteIdentity((await SiteContent.findOne({key:'website'}).lean())?.content || {})); }
   catch { res.status(503).json({message:'Content unavailable'}); }
 });
 router.put('/', protect, adminOnly, async (req: Request, res: Response) => {

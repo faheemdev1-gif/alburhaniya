@@ -1,0 +1,10 @@
+COMPLETE PROJECT — NEW DOMAIN UPDATE
+
+Extract this ZIP. Open the project folder. Copy all its contents into your existing matching project folder and replace matching files. Preserve your .git folder and local secrets.
+
+Read README-DOMAIN-UPDATE.md. Deploy the frontend to Vercel and backend to Hostinger. Apply HOSTINGER-DOMAIN-UPDATE.env on Hostinger and enter the new mailbox SMTP password separately.
+
+Website: https://www.alburhaniyainternational.org.uk
+Email: info@alburhaniyainternational.org.uk
+
+All previous fixes are included. No private passwords or Stripe keys are included.

@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer';
 import { validEmail } from './contactNotification';
 
-export const mainMailbox = 'info@al-burhaniyainternational.co.uk';
+export const mainMailbox = 'info@alburhaniyainternational.org.uk';
 export const notificationMailbox = () => process.env.NOTIFICATION_TO_EMAIL || process.env.CONTACT_TO_EMAIL || mainMailbox;
 export const eventMailbox = () => process.env.EVENT_TO_EMAIL || notificationMailbox();
 export const siteSender = () => process.env.EVENT_FROM_EMAIL || process.env.CONTACT_FROM_EMAIL || process.env.SMTP_USER || mainMailbox;

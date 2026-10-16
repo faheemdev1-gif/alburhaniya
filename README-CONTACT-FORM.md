@@ -70,10 +70,10 @@ BACKEND environment, not in Vercel or in any VITE_* variable:
     SMTP_HOST=smtp.hostinger.com
     SMTP_PORT=465
     SMTP_SECURE=true
-    SMTP_USER=info@al-burhaniyainternational.co.uk
+    SMTP_USER=info@alburhaniyainternational.org.uk
     SMTP_PASS=YOUR_MAILBOX_PASSWORD
-    CONTACT_FROM_EMAIL=info@al-burhaniyainternational.co.uk
-    CONTACT_TO_EMAIL=info@al-burhaniyainternational.co.uk
+    CONTACT_FROM_EMAIL=info@alburhaniyainternational.org.uk
+    CONTACT_TO_EMAIL=info@alburhaniyainternational.org.uk
 
 SMTP_USER must be a real mailbox you control. SMTP_PASS is that mailbox's
 password, not your Hostinger account password. CONTACT_FROM_EMAIL must be a

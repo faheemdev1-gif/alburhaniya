@@ -1,3 +1,5 @@
+Latest settings: see `README-DOMAIN-UPDATE.md` and `HOSTINGER-DOMAIN-UPDATE.env` for the new domain and mailbox.
+
 # Donation, notifications and event registration update — 14 October 2026
 
 Both projects must be deployed. These archives do not deploy themselves.
@@ -11,7 +13,7 @@ Both projects must be deployed. These archives do not deploy themselves.
 - Registration information is emailed to the main mailbox. A separate event confirmation goes to the attendee. View records and email status in Admin > Events > Registrations. Failed/disabled emails can be retried by an administrator.
 - Event loading errors show a retry control rather than a misleading empty events list. The event date is evaluated in the Europe/London timezone.
 
-Main mailbox: **info@al-burhaniyainternational.co.uk**.
+Main mailbox: **info@alburhaniyainternational.org.uk**.
 
 ## Current live status
 
@@ -32,16 +34,16 @@ Keep the existing MongoDB URI, JWT secret and account settings. Add these enviro
 SMTP_HOST=smtp.hostinger.com
 SMTP_PORT=465
 SMTP_SECURE=true
-SMTP_USER=info@al-burhaniyainternational.co.uk
+SMTP_USER=info@alburhaniyainternational.org.uk
 SMTP_PASS=<the mailbox SMTP password>
-CONTACT_FROM_EMAIL=info@al-burhaniyainternational.co.uk
-CONTACT_TO_EMAIL=info@al-burhaniyainternational.co.uk
-NOTIFICATION_TO_EMAIL=info@al-burhaniyainternational.co.uk
-EVENT_FROM_EMAIL=info@al-burhaniyainternational.co.uk
-EVENT_TO_EMAIL=info@al-burhaniyainternational.co.uk
-NEWSLETTER_FROM_EMAIL=info@al-burhaniyainternational.co.uk
-NEWSLETTER_SITE_URL=https://al-burhaniyainternational.co.uk
-DONATION_SITE_URL=https://al-burhaniyainternational.co.uk
+CONTACT_FROM_EMAIL=info@alburhaniyainternational.org.uk
+CONTACT_TO_EMAIL=info@alburhaniyainternational.org.uk
+NOTIFICATION_TO_EMAIL=info@alburhaniyainternational.org.uk
+EVENT_FROM_EMAIL=info@alburhaniyainternational.org.uk
+EVENT_TO_EMAIL=info@alburhaniyainternational.org.uk
+NEWSLETTER_FROM_EMAIL=info@alburhaniyainternational.org.uk
+NEWSLETTER_SITE_URL=https://www.alburhaniyainternational.org.uk
+DONATION_SITE_URL=https://www.alburhaniyainternational.org.uk
 STRIPE_SECRET_KEY=<the organisation's Stripe server key>
 ```
 
