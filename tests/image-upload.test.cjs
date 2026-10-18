@@ -6,12 +6,13 @@ const jwt = require('jsonwebtoken');
 process.env.JWT_SECRET = 'isolated-test-secret';
 process.env.MEDIA_STORAGE = 'mongodb';
 const app = require('../dist/app').default;
+require('./helpers/authFixture.cjs');
 const SiteMedia = require('../dist/models/SiteMedia').default;
 const Gallery = require('../dist/models/Gallery').default;
 const cloudinary = require('cloudinary').v2;
 const records = new Map();
 let server, base, png, saved = 0;
-const token = jwt.sign({id:'test-admin',role:'admin'}, process.env.JWT_SECRET);
+const token = jwt.sign({id:'aaaaaaaaaaaaaaaaaaaaaaaa',role:'admin'}, process.env.JWT_SECRET);
 const originalCreate = SiteMedia.create;
 const originalFind = SiteMedia.findById;
 const originalGalleryCreate = Gallery.create;
@@ -53,7 +54,7 @@ test('health identifies the deployed upload contract and both endpoints', async 
 test('upload endpoints exist and enforce admin authentication before parsing files', async () => {
   for (const path of ['/api/media','/api/site-content/image','/api/gallery']) {
     assert.equal((await upload(path,png,'image/png',{},null)).status,401);
-    const userToken = jwt.sign({id:'test-user',role:'user'},process.env.JWT_SECRET);
+    const userToken = jwt.sign({id:'bbbbbbbbbbbbbbbbbbbbbbbb',role:'user'},process.env.JWT_SECRET);
     assert.equal((await upload(path,png,'image/png',{},userToken)).status,403);
   }
 });

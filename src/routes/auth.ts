@@ -10,10 +10,12 @@ import {
   deleteUser,
 } from '../controllers/userController';
 import { protect, adminOnly } from '../middleware/auth';
+import passwordResetRoutes from './passwordReset';
 
 const router = Router();
 
 // Public
+router.use(passwordResetRoutes);
 router.post('/login', login);
 
 // Authenticated

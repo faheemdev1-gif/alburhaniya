@@ -7,6 +7,10 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: 'admin' | 'editor';
+  authVersion: number;
+  passwordResetTokenHash?: string;
+  passwordResetExpiresAt?: Date;
+  passwordResetRequestedAt?: Date;
   comparePassword(candidate: string): Promise<boolean>;
 }
 
@@ -14,8 +18,12 @@ const UserSchema = new Schema<IUser>(
   {
     name:     { type: String, required: true },
     email:    { type: String, required: true, unique: true, lowercase: true },
-    password: { type: String, required: true, minlength: 8 },
+    password: { type: String, required: true, minlength: 8, select: false },
     role:     { type: String, enum: ['admin', 'editor'], default: 'editor' },
+    authVersion: { type: Number, default: 0, select: false },
+    passwordResetTokenHash: { type: String, select: false, index: true },
+    passwordResetExpiresAt: { type: Date, select: false },
+    passwordResetRequestedAt: { type: Date, select: false },
   },
   { timestamps: true }
 );
@@ -24,6 +32,10 @@ const UserSchema = new Schema<IUser>(
 UserSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
+  if (!this.isNew) this.$inc('authVersion', 1);
+  this.passwordResetTokenHash = undefined;
+  this.passwordResetExpiresAt = undefined;
+  this.passwordResetRequestedAt = undefined;
   next();
 });
 

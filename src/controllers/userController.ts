@@ -3,11 +3,12 @@ import { Request, Response } from 'express';
 import jwt  from 'jsonwebtoken';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
+import { passwordError } from '../services/passwordReset';
 
 // ── Helper: sign JWT ─────────────────────────────────────────────
-function signToken(id: string, role: string): string {
+function signToken(id: string, role: string, authVersion = 0): string {
   return jwt.sign(
-    { id, role },
+    { id, role, authVersion },
     process.env.JWT_SECRET as string,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' } as jwt.SignOptions
   );
@@ -18,18 +19,18 @@ export async function login(req: Request, res: Response): Promise<void> {
   try {
     const { email, password } = req.body as { email: string; password: string };
 
-    if (!email || !password) {
+    if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password || email.length > 254 || password.length > 1024) {
       res.status(400).json({ message: 'Email and password are required' });
       return;
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ email: email.trim().toLowerCase() }).select('+password +authVersion');
     if (!user || !(await user.comparePassword(password))) {
       res.status(401).json({ message: 'Invalid email or password' });
       return;
     }
 
-    const token = signToken(user._id.toString(), user.role);
+    const token = signToken(user._id.toString(), user.role, user.authVersion);
 
     res.json({
       token,
@@ -78,6 +79,9 @@ export async function createUser(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    const invalidPassword = passwordError(password);
+    if (invalidPassword) { res.status(400).json({ message: invalidPassword }); return; }
+
     const existing = await User.findOne({ email: email.toLowerCase() });
     if (existing) {
       res.status(409).json({ message: 'A user with that email already exists' });
@@ -109,7 +113,9 @@ export async function updateUser(req: Request, res: Response): Promise<void> {
     if (email) update.email = email.toLowerCase();
     if (role)  update.role  = role;
 
-    const user = await User.findByIdAndUpdate(req.params.id, update, {
+    const user = await User.findByIdAndUpdate(req.params.id, { $set: update,
+      ...(email ? { $unset: { passwordResetTokenHash: 1, passwordResetExpiresAt: 1, passwordResetRequestedAt: 1 } } : {}),
+    }, {
       new: true, runValidators: true,
     }).select('-password');
 
@@ -131,12 +137,13 @@ export async function changePassword(req: AuthRequest, res: Response): Promise<v
       res.status(400).json({ message: 'currentPassword and newPassword are required' });
       return;
     }
-    if (newPassword.length < 8) {
-      res.status(400).json({ message: 'New password must be at least 8 characters' });
+    const invalidPassword = passwordError(newPassword);
+    if (typeof currentPassword !== 'string' || invalidPassword) {
+      res.status(400).json({ message: invalidPassword || 'Current password is required' });
       return;
     }
 
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id).select('+password');
     if (!user) { res.status(404).json({ message: 'User not found' }); return; }
 
     // Only the user themselves or an admin can change the password

@@ -7,12 +7,13 @@ const envKeys = ['JWT_SECRET','SMTP_HOST','SMTP_PORT','SMTP_SECURE','SMTP_USER',
 const oldEnv = Object.fromEntries(envKeys.map(k => [k, process.env[k]]));
 process.env.JWT_SECRET = 'newsletter-isolated-test-secret';
 const app = require('../dist/app').default;
+require('./helpers/authFixture.cjs');
 const Model = require('../dist/models/NewsletterSubscriber').default;
 const service = require('../dist/services/newsletterNotification');
 const f = newsletterFixture(Model, nodemailer);
 let server, base;
-const admin = jwt.sign({ id: 'admin', role: 'admin' }, process.env.JWT_SECRET);
-const staff = jwt.sign({ id: 'staff', role: 'user' }, process.env.JWT_SECRET);
+const admin = jwt.sign({ id: 'aaaaaaaaaaaaaaaaaaaaaaaa', role: 'admin' }, process.env.JWT_SECRET);
+const staff = jwt.sign({ id: 'bbbbbbbbbbbbbbbbbbbbbbbb', role: 'user' }, process.env.JWT_SECRET);
 function smtp(enabled = true) {
   for (const key of envKeys) if (key !== 'JWT_SECRET') delete process.env[key];
   if (enabled) Object.assign(process.env, { SMTP_HOST: 'smtp.example.test', SMTP_PORT: '465', SMTP_USER: 'owner@example.test', SMTP_PASS: 'private-test-password', CONTACT_FROM_EMAIL: 'owner@example.test' });
@@ -126,6 +127,6 @@ test('sign-ups are rate limited per email with a Retry-After header', async () =
   const res=await subscribe('rate@example.test');assert.equal(res.status,429);assert.equal(res.headers.get('Retry-After'),'900');
 });
 test('health reports newsletter readiness without exposing credentials', async () => {
-  const data=await(await fetch(base+'/api/health')).json();assert.equal(data.newsletter.contract,'newsletter-v2');assert.equal(data.newsletter.emailConfigured,false);assert(!JSON.stringify(data).includes('password'));
+  const data=await(await fetch(base+'/api/health')).json();assert.equal(data.newsletter.contract,'newsletter-v2');assert.equal(data.newsletter.emailConfigured,false);assert(!JSON.stringify(data).includes('"password":'));
   smtp();process.env.NEWSLETTER_SITE_URL='https://attacker:secret@example.test';assert.equal(service.newsletterEmailConfigured(),false);delete process.env.NEWSLETTER_SITE_URL;
 });

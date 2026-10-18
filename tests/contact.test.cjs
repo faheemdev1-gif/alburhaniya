@@ -5,12 +5,13 @@ const jwt=require('jsonwebtoken');
 const nodemailer=require('nodemailer');
 process.env.JWT_SECRET='isolated-contact-secret';
 const app=require('../dist/app').default;
+require('./helpers/authFixture.cjs');
 const Model=require('../dist/models/ContactMessage').default;
 const records=new Map();let server,base,failSave=false,failMail=false,sends=[];
 const originals={};const envKeys=['SMTP_HOST','SMTP_PORT','SMTP_SECURE','SMTP_USER','SMTP_PASS','CONTACT_FROM_EMAIL','CONTACT_TO_EMAIL'];
 const originalEnv=Object.fromEntries(envKeys.map(k=>[k,process.env[k]]));
-const admin=jwt.sign({id:'admin',role:'admin'},process.env.JWT_SECRET);
-const staff=jwt.sign({id:'staff',role:'user'},process.env.JWT_SECRET);
+const admin=jwt.sign({id:'aaaaaaaaaaaaaaaaaaaaaaaa',role:'admin'},process.env.JWT_SECRET);
+const staff=jwt.sign({id:'bbbbbbbbbbbbbbbbbbbbbbbb',role:'user'},process.env.JWT_SECRET);
 function wrap(value){const query={select:()=>query,lean:()=>Promise.resolve(value),then:(resolve,reject)=>Promise.resolve(value).then(resolve,reject)};return query;}
 function smtp(enabled=true){for(const key of envKeys)delete process.env[key];if(enabled)Object.assign(process.env,{SMTP_HOST:'smtp.example.test',SMTP_PORT:'465',SMTP_USER:'owner@example.test',SMTP_PASS:'not-a-real-password',CONTACT_FROM_EMAIL:'owner@example.test',CONTACT_TO_EMAIL:'inbox@example.test'});}
 before(async()=>{
@@ -49,4 +50,4 @@ test('inbox and mutation endpoints require admin access',async()=>{const id=[...
 test('admin inbox includes configuration, pagination and safe caching',async()=>{const res=await request('','GET',undefined,admin);assert.equal(res.status,200);assert.equal(res.headers.get('Cache-Control'),'no-store');const data=await res.json();assert.equal(data.pageSize,25);assert.equal(data.emailConfigured,true);assert.equal(data.total,records.size);assert(!('submissionId'in data.messages[0]));assert.equal((await request('?page=-1','GET',undefined,admin)).status,400);});
 test('admin status updates allow only supported values and filter correctly',async()=>{const id=[...records.keys()][0];const res=await request(`/${id}`,'PATCH',{status:'resolved',email:'overwrite'},admin);assert.equal(res.status,200);assert.equal(records.get(id).status,'resolved');assert.notEqual(records.get(id).email,'overwrite');assert.equal((await request(`/${id}`,'PATCH',{status:'invalid'},admin)).status,400);assert.equal((await request('/invalid','PATCH',{status:'read'},admin)).status,400);const data=await(await request('?status=resolved','GET',undefined,admin)).json();assert.equal(data.total,1);});
 test('repeated public submissions are rate limited per sender',async()=>{smtp(false);for(let i=0;i<5;i++)assert.equal((await request('','POST',payload({email:'rate@example.test'}))).status,201);const res=await request('','POST',payload({email:'rate@example.test'}));assert.equal(res.status,429);assert.equal(res.headers.get('Retry-After'),'900');});
-test('health identifies the contact contract without exposing mail credentials',async()=>{const data=await(await fetch(base+'/api/health')).json();assert.equal(data.contact.contract,'contact-v1');assert.equal(data.contact.emailConfigured,false);assert(!JSON.stringify(data).includes('password'));});
+test('health identifies the contact contract without exposing mail credentials',async()=>{const data=await(await fetch(base+'/api/health')).json();assert.equal(data.contact.contract,'contact-v1');assert.equal(data.contact.emailConfigured,false);assert(!JSON.stringify(data).includes('"password":'));});

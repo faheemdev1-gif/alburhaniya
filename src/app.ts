@@ -18,6 +18,7 @@ import { donationConfigured, DONATION_CONTRACT } from './services/stripeCheckout
 import { newsletterEmailConfigured } from './services/newsletterNotification';
 import { siteEmailConfigured, eventMailbox } from './services/siteEmail';
 import { contactEmailConfigured } from './services/contactNotification';
+import { passwordResetConfigured } from './services/passwordReset';
 
 
 const app  = express();
@@ -44,6 +45,7 @@ app.use('/api/donations', express.json({ limit: '2kb' }), donationRoutes);
 app.use('/api/newsletter', express.json({ limit: '4kb' }), newsletterRoutes);
 app.use('/api/contact', express.json({ limit: '16kb' }), contactRoutes);
 app.use('/api/events', express.json({ limit: '8kb' }), eventRoutes);
+app.use('/api/auth', express.json({ limit: '4kb' }), authRoutes);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -51,7 +53,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // ── API routes ────────────────────────────────────────────────────
-app.use('/api/auth',     authRoutes);
 
 app.use('/api/articles', articleRoutes);
 app.use('/api/gallery',  galleryRoutes);
@@ -63,6 +64,7 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(),
     uploadContract:'image-upload-v3',mediaStorage:mediaStorageStatus(),
     contact:{contract:'contact-v1',emailConfigured:contactEmailConfigured()},
+    passwordReset:{contract:'admin-password-reset-v1',emailConfigured:passwordResetConfigured()},
     newsletter:{contract:'newsletter-v2',emailConfigured:newsletterEmailConfigured(),adminEmailConfigured:siteEmailConfigured()},
     events:{contract:'event-registration-v1',emailConfigured:siteEmailConfigured(eventMailbox())},
     donations:{contract:DONATION_CONTRACT,configured:donationConfigured()},

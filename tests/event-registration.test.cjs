@@ -9,6 +9,7 @@ const envKeys = ['JWT_SECRET','SMTP_HOST','SMTP_PORT','SMTP_USER','SMTP_PASS','C
 const env = Object.fromEntries(envKeys.map(k => [k, process.env[k]]));
 process.env.JWT_SECRET = 'isolated-registration-test';
 const app = require('../dist/app').default;
+require('./helpers/authFixture.cjs');
 let server, base, failStore = false, failMail = false;
 const mail = [], rows = new Map(), originals = {};
 const eventId = '111111111111111111111111';
@@ -61,7 +62,7 @@ before(async()=>{
 });
 after(async()=>{for(const key of ['findOneAndUpdate','findById','updateOne','exists'])Model[key]=originals[key];nodemailer.createTransport=originals.createTransport;for(const[k,v]of Object.entries(env))if(v===undefined)delete process.env[k];else process.env[k]=v;server.closeAllConnections();await new Promise(r=>server.close(r));});
 const payload=(extra={})=>({submissionId:randomUUID(),firstName:'Jane',lastName:'Smith',email:randomUUID()+'@example.test',phone:'+44 1234',notes:'Two guests',places:2,website:'',...extra});
-function req(path,method='GET',data,role){return fetch(base+path,{method,headers:{...(data!==undefined?{'Content-Type':'application/json'}:{}),...(role?{Authorization:'Bearer '+jwt.sign({id:'tester',role},process.env.JWT_SECRET)}:{})},...(data!==undefined?{body:JSON.stringify(data)}:{})});}
+function req(path,method='GET',data,role){return fetch(base+path,{method,headers:{...(data!==undefined?{'Content-Type':'application/json'}:{}),...(role?{Authorization:'Bearer '+jwt.sign({id:role==='admin'?'aaaaaaaaaaaaaaaaaaaaaaaa':'bbbbbbbbbbbbbbbbbbbbbbbb',role},process.env.JWT_SECRET)}:{})},...(data!==undefined?{body:JSON.stringify(data)}:{})});}
 const register=(data,id=eventId)=>req(`/${id}/register`,'POST',data);
 test('real event schema hides attendee details by default and validates registration fields',async()=>{
  assert.equal(Model.schema.path('registrations').options.select,false);
